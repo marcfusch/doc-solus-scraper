@@ -13,24 +13,21 @@ import os
 import glob
 import requests
 
-#A modifier comme vous voulez
+
 Adresse = "my@email.com"
-Password = "Password"
-login=False #Mettre sur True pour activer la connection 
+Password = "password"
+login=True
 
-contesttimehours=0 #Durée de l'épreuve
-sleeptimesec=1 #Mettre sur 1 ou 2 (plus stable sur 2)
-
-wkdir="/Users/marcfusch/Documents/git/Doc-solus/public" #Repertoire de travail (ici macos)
-###
-#Touchez pas trop
-savefile='contests.txt'
 baseadd="https://www.doc-solus.fr/prepa/sci/adc/bin/view.corrige.html?q="
+savefile='contests2.txt'
 data_width=20
 pixeldim=50
 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'}
-###
 
+contesttimehours=4 #Durée de l'épreuve
+sleeptimesec=2.5
+
+wkdir="/Users/marcfusch/Documents/git/Doc-solus"
 os.walk(wkdir)
 
 seed(1)
@@ -44,20 +41,33 @@ def connection():
     driver.find_element(By.NAME,"save").click()
     print("Connecté")
     
-
 def checkconnection():
     if  login==True:
-        con=driver.find_elements(By.XPATH,'/html/body/div/ul/li[5]/a')
-        el=con[0].get_attribute("href").split('/')[-1]
-        if el == "connexion.html":
-            print("Compte déconnecté: connexion")
-            connection()
-            return(False)
-        elif el == "mon-compte.html":
-            return(True)
-        else:
-            print("Erreur de connexion")
-            return(False)
+        try:
+            con=driver.find_elements(By.XPATH,'/html/body/div/ul/li[5]/a')
+            el=con[0].get_attribute("href").split('/')[-1]
+            if el == "connexion.html":
+                print("Compte déconnecté: connexion")
+                connection()
+                return(False)
+            elif el == "mon-compte.html":
+                return(True)
+            else:
+                print("Erreur de connexion")
+                return(False)
+        except:
+            driver.refresh()
+            time.sleep(sleeptimesec)
+            checkconnection()
+            pass
+
+def checktime():
+    lctime=(int(time.strftime("%H",time.localtime())))
+    if lctime >=7 and lctime <=22:
+        pass
+    else:
+        print("Programm is running outside working hours. Quitting...")
+        exit()
 
 def getsubject(name):
     if not os.path.isfile(wkdir+'/output/pdf/'+name+'_enonce.pdf'):
@@ -127,7 +137,6 @@ def capture_base64(contest,question,direc):
             bruh.append(element.get_attribute("src"))
         except:
             pass
-    bits=len(bruh)
     try:
         for i in range(0,len(bruh)//data_width):
             for j in range(0,data_width):
@@ -153,13 +162,17 @@ def capture_base64(contest,question,direc):
         return(True)
     except:
         print("Error during image saving: Retrying")
+        driver.refresh()
         return(False)
 
 
 def scanner(contest):
+    checktime()
     checkconnection()
+
     link=baseadd+contest
     lp = page(link,contest)
+
     newdir=wkdir+"/output/"+contest
     if not os.path.exists(newdir):
         try:
@@ -179,23 +192,20 @@ def scanner(contest):
         else: 
             lien=lp[question]
             driver.get(lien)
-            if  checkconnection():
+            if  not checkconnection():
                 time.sleep(sleeptimesec)
-
-            else:
-                time.sleep(sleeptimesec)
+                driver.get(lien)
 
             result=False
             attempts=0
             while (not result) and (attempts<3):
-                driver.get(lien)
                 time.sleep(sleeptimesec)
                 result=capture_base64(contest,question,newdir)
                 time.sleep(sleeptimesec)
                 attempts+=1
-            if attempts<3:
+            if attempts<2:
                 errors=0
-            if attempts>=3:
+            if attempts>=2:
                 print("Failed to scrap current page: skipping...")
                 errors+=1
             time.sleep(waittime+randint(-waittime//2, +waittime//2))
@@ -215,6 +225,10 @@ def main():
         generatepdf(contest)
         time.sleep(sleeptimesec)
 
-#generation('https://www.doc-solus.fr/main.html?words=&filiere=PCSI&matiere=Mati%E8re&concours=Concours&annee=Ann%E9e') #Permet de génerer le fichier contest.txt en fonction de l'url de la recherche doc solus
 
-main() #Pour lancer le scrap si il existe un fichier contest.txt contenant le nom des concours a scrapper.
+
+#generatepdf('MP_PHYSIQUE_MINES_2_2018')
+
+#generation('https://www.doc-solus.fr/main.html?words=&filiere=PCSI&matiere=Mati%E8re&concours=Concours&annee=Ann%E9e')
+
+main()
