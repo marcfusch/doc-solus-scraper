@@ -1,2 +1,2 @@
 # sos-solus
-Doc Solus Scrapper (Permet de garder les corrigés doc solus)
+Doc Solus Scraper (Permet de garder les corrigés doc solus)
