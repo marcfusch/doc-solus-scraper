@@ -38,7 +38,7 @@ chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-extensions")
 chrome_options.add_argument("--dns-prefetch-disable")
 chrome_options.add_argument("--disable-gpu")
-driver = webdriver.Chrome(use_subprocess=True,options=chrome_options, enable_cdp_events=True, headless=False)
+driver = webdriver.Chrome(use_subprocess=True,options=chrome_options, enable_cdp_events=True, headless=True)
 
 def connection():   
     driver.get("https://www.doc-solus.fr/bin/users/connexion.html")
