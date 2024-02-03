@@ -13,18 +13,19 @@ import os
 import glob
 import requests
 
-
+######## Paramètres à changer #########
 Adresse = "my@email.com"
 Password = "password"
 login=True
+
+contesttimehours=4 #Durée de l'épreuve en heures
+#######################################
 
 baseadd="https://www.doc-solus.fr/prepa/sci/adc/bin/view.corrige.html?q="
 savefile='contests2.txt'
 data_width=20
 pixeldim=50
 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'}
-
-contesttimehours=4 #Durée de l'épreuve
 sleeptimesec=2.5
 
 wkdir="/Users/marcfusch/Documents/git/Doc-solus"
@@ -32,7 +33,12 @@ os.walk(wkdir)
 
 seed(1)
 chrome_options=webdriver.ChromeOptions()
-driver = webdriver.Chrome(use_subprocess=True,headless=False)
+chrome_options.add_argument("enable-automation")
+chrome_options.add_argument("--no-sandbox")
+chrome_options.add_argument("--disable-extensions")
+chrome_options.add_argument("--dns-prefetch-disable")
+chrome_options.add_argument("--disable-gpu")
+driver = webdriver.Chrome(use_subprocess=True,options=chrome_options, enable_cdp_events=True, headless=False)
 
 def connection():   
     driver.get("https://www.doc-solus.fr/bin/users/connexion.html")
@@ -86,13 +92,14 @@ def page(link,contest):
     driver.get(link)
     getsubject(contest)
     lp = []
-    resultat = driver.find_elements(By.XPATH,"/html/body/div[2]/section[1]/a")
+    resultat = driver.find_elements(By.XPATH,"/html/body/div[2]/section[1]/span/a")
     for element in resultat:
         try :
             lp.append(element.get_attribute("href"))
         except:
             pass
-    return(lp)   
+    return(lp)
+    
 
 
 def generation(url):
@@ -129,7 +136,6 @@ def generatepdf(name):
 
 
 def capture_base64(contest,question,direc):
-
     full = driver.find_elements(By.XPATH,"/html/body/div[2]/center/div/div/table/tbody/tr/td/img")
     bruh=[]
     for element in full:
@@ -185,6 +191,7 @@ def scanner(contest):
     print("Median waiting time between scraping is: "+str(waittime)+'s')
     errors=0
     for question in range(len(lp)):
+        checktime()
         if errors>=3:
             return(True)
         if os.path.isfile(newdir+"/"+str(question)+".png"):
@@ -203,9 +210,9 @@ def scanner(contest):
                 result=capture_base64(contest,question,newdir)
                 time.sleep(sleeptimesec)
                 attempts+=1
-            if attempts<2:
+            if attempts<3:
                 errors=0
-            if attempts>=2:
+            if attempts>=3:
                 print("Failed to scrap current page: skipping...")
                 errors+=1
             time.sleep(waittime+randint(-waittime//2, +waittime//2))
@@ -229,6 +236,6 @@ def main():
 
 #generatepdf('MP_PHYSIQUE_MINES_2_2018')
 
-#generation('https://www.doc-solus.fr/main.html?words=&filiere=PCSI&matiere=Mati%E8re&concours=Concours&annee=Ann%E9e')
+#generation('https://www.doc-solus.fr/main.html?words=&filiere=PSI&matiere=Mati%E8re&concours=Mines&annee=Ann%E9e')
 
 main()
