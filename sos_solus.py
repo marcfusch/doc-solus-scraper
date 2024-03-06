@@ -18,26 +18,27 @@ Adresse = "my@email.com"
 Password = "password"
 login=True
 
-contesttimehours=4 #Durée de l'épreuve en heures
+wkdir="/Users/marcfusch/Documents/git/Doc-solus" #Répertoire de travail (mettre la racine du dossier cloné)
+
+contesttimehours=3 #Durée de l'épreuve en heures
 #######################################
 
 baseadd="https://www.doc-solus.fr/prepa/sci/adc/bin/view.corrige.html?q="
-savefile='contests2.txt'
+savefile='contests.txt' #nom du fichier texte contenant les concours
 data_width=20
 pixeldim=50
 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'}
 sleeptimesec=2.5
 
-wkdir="/Users/marcfusch/Documents/git/Doc-solus"
 os.walk(wkdir)
-
 seed(1)
 chrome_options=webdriver.ChromeOptions()
-chrome_options.add_argument("enable-automation")
+#chrome_options.add_argument("enable-automation")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-extensions")
 chrome_options.add_argument("--dns-prefetch-disable")
 chrome_options.add_argument("--disable-gpu")
+chrome_options.add_argument("--user-agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'")
 driver = webdriver.Chrome(use_subprocess=True,options=chrome_options, enable_cdp_events=True, headless=True)
 
 def connection():   
@@ -143,6 +144,7 @@ def capture_base64(contest,question,direc):
             bruh.append(element.get_attribute("src"))
         except:
             pass
+
     try:
         for i in range(0,len(bruh)//data_width):
             for j in range(0,data_width):
@@ -160,7 +162,9 @@ def capture_base64(contest,question,direc):
             else:
                 ligne=np.append(ligne,image_np,axis=0)
     except:
+        driver.refresh()
         return(False)
+        
     try:        
         imm=Image.fromarray(ligne)
         imm.save(direc+"/"+str(question)+".png")
@@ -171,6 +175,20 @@ def capture_base64(contest,question,direc):
         driver.refresh()
         return(False)
 
+def capture_image(contest,question,direc):
+    try:
+        imgurl = driver.find_elements(By.XPATH,"//img[@class='img-corrige-q1']")[0].get_attribute('src')
+        r = requests.get(imgurl, stream=True,headers=headers)
+        with open(direc+"/"+str(question)+".png", 'wb') as f:
+            for chunk in r.iter_content():
+                f.write(chunk)  
+        print(str(question)+" saved")
+        return(True)
+    
+    except:
+        print("Error during image saving: Retrying")
+        driver.refresh()
+        return(False)
 
 def scanner(contest):
     checktime()
@@ -207,7 +225,10 @@ def scanner(contest):
             attempts=0
             while (not result) and (attempts<3):
                 time.sleep(sleeptimesec)
-                result=capture_base64(contest,question,newdir)
+                if question ==2: #On ne sait trop pourquoi mais la première question (indexée 2) est toujours en jpg qui peut être sauvegardée facilement
+                    result=capture_image(contest,question,newdir)
+                else:
+                    result=capture_base64(contest,question,newdir)
                 time.sleep(sleeptimesec)
                 attempts+=1
             if attempts<3:
@@ -234,8 +255,7 @@ def main():
 
 
 
-#generatepdf('MP_PHYSIQUE_MINES_2_2018')
-
-#generation('https://www.doc-solus.fr/main.html?words=&filiere=PSI&matiere=Mati%E8re&concours=Mines&annee=Ann%E9e')
+#generatepdf('PC_PHYSIQUE_CCP_2_2023')
+#generation('https://www.doc-solus.fr/main.html?words=&filiere=PC&matiere=Physique&concours=CCINP&annee=2023')
 
 main()
