@@ -73,7 +73,7 @@ def checktime():
     if lctime >=7 and lctime <=22:
         pass
     else:
-        print("Programm is running outside working hours. Quitting...")
+        print("Program is running outside working hours. Quitting...")
         exit()
 
 def getsubject(name):
